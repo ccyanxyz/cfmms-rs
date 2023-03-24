@@ -525,19 +525,55 @@ pub fn deconstruct_pools_from_checkpoint(pools_array: &Vec<Value>) -> Vec<Pool> 
 
                 match pool_dex_variant {
                     DexVariant::UniswapV2 => {
+                        let reserve0_str = pool_map
+                            .get("reserve0")
+                            .unwrap_or_else(|| panic!("Could not get reserve0 {:?}", pool_map))
+                            .as_str()
+                            .expect("Could not convert reserve0 to u128");
+                        let reserve1_str = pool_map
+                            .get("reserve1")
+                            .unwrap_or_else(|| panic!("Could not get reserve1 {:?}", pool_map))
+                            .as_str()
+                            .expect("Could not convert reserve1 to u128");
                         pools.push(Pool::UniswapV2(UniswapV2Pool::new(
                             addr,
                             token_a,
                             token_a_decimals,
                             token_b,
                             token_b_decimals,
-                            0,
-                            0,
+                            reserve0_str.parse::<u128>().unwrap(),
+                            reserve1_str.parse::<u128>().unwrap(),
                             fee,
                         )));
                     }
 
                     DexVariant::UniswapV3 => {
+                        let liquidity_str = pool_map
+                            .get("liquidity")
+                            .unwrap_or_else(|| panic!("Could not get liquidity {:?}", pool_map))
+                            .as_str()
+                            .expect("Could not convert liquidity to u128");
+                        let sqrt_price_str = pool_map
+                            .get("sqrt_price")
+                            .unwrap_or_else(|| panic!("Could not get sqrt_price {:?}", pool_map))
+                            .as_str()
+                            .expect("Could not convert sqrt_price to u128");
+                        let tick = pool_map
+                            .get("tick")
+                            .unwrap_or_else(|| panic!("Could not get tick {:?}", pool_map))
+                            .as_i64()
+                            .expect("Could not convert tick to i32") as i32;
+                        let tick_spacing = pool_map
+                            .get("tick_spacing")
+                            .unwrap_or_else(|| panic!("Could not get tick_spacing {:?}", pool_map))
+                            .as_i64()
+                            .expect("Could not convert tick_spacing to i32") as i32;
+                        let liquidity_net_str = pool_map
+                            .get("liquidity_net")
+                            .unwrap_or_else(|| panic!("Could not get liquidity_net {:?}", pool_map))
+                            .as_str()
+                            .expect("Could not convert liquidity_net to i128");
+                        
                         pools.push(Pool::UniswapV3(UniswapV3Pool::new(
                             addr,
                             token_a,
@@ -545,11 +581,11 @@ pub fn deconstruct_pools_from_checkpoint(pools_array: &Vec<Value>) -> Vec<Pool> 
                             token_b,
                             token_b_decimals,
                             fee,
-                            0,
-                            U256::zero(),
-                            0,
-                            0,
-                            0,
+                            liquidity_str.parse::<u128>().unwrap(),
+                            U256::from_dec_str(&sqrt_price_str).unwrap(),
+                            tick,
+                            tick_spacing,
+                            liquidity_net_str.parse::<i128>().unwrap(),
                         )));
                     }
                 }
@@ -656,6 +692,16 @@ pub fn construct_checkpoint(
                     uniswap_v2_pool.token_b_decimals.into(),
                 );
 
+                pool_map.insert(
+                    String::from("reserve0"),
+                    uniswap_v2_pool.reserve_0.into(),
+                );
+
+                pool_map.insert(
+                    String::from("reserve1"),
+                    uniswap_v2_pool.reserve_1.into(),
+                );
+
                 pool_map.insert(String::from("fee"), uniswap_v2_pool.fee.into());
 
                 pools_array.push(pool_map.into());
@@ -692,7 +738,20 @@ pub fn construct_checkpoint(
                     uniswap_v3_pool.token_b_decimals.into(),
                 );
 
+                pool_map.insert(
+                    String::from("liquidity"),
+                    uniswap_v3_pool.liquidity.into(),
+                );
+
+                pool_map.insert(
+                    String::from("sqrt_price"),
+                    uniswap_v3_pool.sqrt_price.as_u128().into(),
+                );
+
                 pool_map.insert(String::from("fee"), uniswap_v3_pool.fee.into());
+                pool_map.insert(String::from("tick"), uniswap_v3_pool.tick.into());
+                pool_map.insert(String::from("tick_spacing"), uniswap_v3_pool.tick_spacing.into());
+                pool_map.insert(String::from("liquidity_net"), uniswap_v3_pool.liquidity_net.into());
 
                 pools_array.push(pool_map.into());
             }

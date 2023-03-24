@@ -42,7 +42,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     ];
 
     //Sync pairs
-    sync::sync_pairs(dexes, provider, Some("checkpoint.json")).await?;
+    sync::sync_pairs(dexes, provider, None).await?;
 
     Ok(())
 }

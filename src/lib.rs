@@ -8,3 +8,4 @@ pub mod throttle;
 pub use pool::simulate_route;
 pub use pool::simulate_route_mut;
 pub mod batch_requests;
+pub mod state;
